@@ -85,7 +85,7 @@ It provisions resource groups, AKS, Key Vault and RBAC; stores state in Azure St
 
 1) **Clone the repository**
 ```bash
-git clone https://github.com/PritomDas/aks-terraform-azuredevops.git
+git clone https://github.com/swatishree-sahoo/azure-aks-devops-platform.git
 cd aks-terraform-azuredevops
 ```
 
@@ -169,9 +169,9 @@ terraform plan
 
 <h2><a class="anchor" id="author--contact"></a>Author & Contact</h2>
 
-**Pritom Das Radheshyam**  
-Cloud Engineer  
-📧 Email: you.found.pritom@outlook.com
-🔗 LinkedIn: https://www.linkedin.com/in/you-found-pritom/  
-🔗 GitHub: https://github.com/PritomDas
-🔗 Website: https://pritom.uwu.ai
+**Swatishree Sahoo**  
+DevOps Engineer  
+📧 Email: swatishreesahoo02@gmail.com
+🔗 LinkedIn: www.linkedin.com/in/swatishree-sahoo
+🔗 GitHub: https://github.com/swatishree-sahoo
+
