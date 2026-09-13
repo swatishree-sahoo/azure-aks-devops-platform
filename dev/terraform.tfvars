@@ -1,0 +1,6 @@
+rgname                 = "dev-pritom-rg"
+service_principal_name = "dev-pritom-spn"
+keyvault_name          = "dev-2026pritom-kv-101"
+SUB_ID                 = "ffc3209b-7e54-44f5-b52f-2991017c729d"
+cluster_name           = "dev-2026pritom-cluster"
+node_pool_name         = "devnp"

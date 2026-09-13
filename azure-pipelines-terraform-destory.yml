@@ -1,0 +1,70 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+parameters:
+  - name: environment
+    type:  string
+    values:
+      - dev
+      - staging
+    default: dev
+
+stages:
+- stage: plan_destroy
+  jobs: 
+    - job: plan_destroy
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.environment }}'
+          backendAzureRmUseEntraIdForAuthentication: false
+          backendServiceArm: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+          backendAzureRmResourceGroupName: 'terraform-state-rg'
+          backendAzureRmStorageAccountName: 'tf${{ parameters.environment }}backend2026pritom'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: '${{ parameters.environment }}.terraform.tfstate'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'plan'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.environment }}'
+          environmentServiceNameAzureRM: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+
+- stage: destroy_env
+  jobs: 
+    - job: destroy
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.environment }}'
+          backendAzureRmUseEntraIdForAuthentication: false
+          backendServiceArm: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+          backendAzureRmResourceGroupName: 'terraform-state-rg'
+          backendAzureRmStorageAccountName: 'tf${{ parameters.environment }}backend2026pritom'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: '${{ parameters.environment }}.terraform.tfstate'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'destroy'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/${{ parameters.environment }}'
+          commandOptions: '--auto-approve'
+          environmentServiceNameAzureRM: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'

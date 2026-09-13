@@ -1,0 +1,143 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+#  paths:
+#    include:
+#      - aks-terraform-azuredevops/*
+#      - azure-pipeline.yml
+
+stages:
+- stage: validate
+  jobs: 
+    - job: tf_validate
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
+          backendAzureRmUseEntraIdForAuthentication: false
+          backendServiceArm: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+          backendAzureRmResourceGroupName: 'terraform-state-rg'
+          backendAzureRmStorageAccountName: 'tfdevbackend2026pritom'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: 'dev.terraform.tfstate'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'validate'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
+- stage: Dev_deploy
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs: 
+    - job: terraform_apply_dev
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
+          backendAzureRmUseEntraIdForAuthentication: false
+          backendServiceArm: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+          backendAzureRmResourceGroupName: 'terraform-state-rg'
+          backendAzureRmStorageAccountName: 'tfdevbackend2026pritom'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: 'dev.terraform.tfstate'
+#      - task: AzureCLI@2
+#        displayName: 'Import existing role assignment (dev) if present'
+#        inputs:
+#          azureSubscription: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+#          scriptType: bash
+#          scriptLocation: inlineScript
+#          inlineScript: |
+#            set -euo pipefail
+#            cd "$(System.DefaultWorkingDirectory)/dev"
+#
+#            echo "Terraform init (idempotent) to ensure backend is ready..."
+#            terraform -version
+#            terraform init -input=false
+#
+#            # --- Keep these in sync with your TF code ---
+#            PRINCIPAL_OBJECT_ID="4cdca142-adcc-42f7-b2e2-cea81c1df14b"
+#            SCOPE="/subscriptions/ffc3209b-7e54-44f5-b52f-2991017c729d"
+#            ROLE_NAME="User Access Administrator"   # change to "Owner" if that's what your TF uses
+#            TF_RESOURCE_ADDR="azurerm_role_assignment.rolespn"
+#
+#            echo "Resolving roleDefinitionId for: ${ROLE_NAME}"
+#            ROLE_DEF_ID=$(az role definition list --name "$ROLE_NAME" --query "[0].id" -o tsv)
+#            if [ -z "${ROLE_DEF_ID:-}" ]; then
+#              echo "ERROR: Could not resolve roleDefinitionId for role '${ROLE_NAME}'" >&2
+#              exit 1
+#            fi
+#            echo "ROLE_DEF_ID=$ROLE_DEF_ID"
+#
+#            echo "Searching existing role assignment by (principal, roleDefinitionId, scope)..."
+#            EXISTING_ID=$(az role assignment list \
+#              --assignee-object-id "$PRINCIPAL_OBJECT_ID" \
+#              --scope "$SCOPE" \
+#              --query "[?roleDefinitionId=='${ROLE_DEF_ID}'].id | [0]" -o tsv)
+#
+#            if [ -n "${EXISTING_ID:-}" ]; then
+#              echo "Found existing role assignment: $EXISTING_ID"
+#              echo "Importing into Terraform state at: ${TF_RESOURCE_ADDR}"
+#              terraform import -input=false "$TF_RESOURCE_ADDR" "$EXISTING_ID"
+#              echo "Verifying imported state (first 80 lines):"
+#              terraform state show "$TF_RESOURCE_ADDR" | sed -n '1,80p'
+#            else
+#              echo "No matching assignment found; Terraform will create a new one."
+#              echo "Diagnostics: listing all assignments for principal at scope:"
+#              az role assignment list --assignee-object-id "$PRINCIPAL_OBJECT_ID" --scope "$SCOPE" -o table || true
+#            fi
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/dev'
+          commandOptions: '--auto-approve'
+          environmentServiceNameAzureRM: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+
+- stage: Stage_deploy
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs: 
+    - job: terraform_apply_stage
+      pool:
+        vmImage: ubuntu-latest
+      steps:
+      - task: TerraformInstaller@1
+        inputs:
+          terraformVersion: 'latest'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'init'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/staging'
+          backendAzureRmUseEntraIdForAuthentication: false
+          backendServiceArm: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'
+          backendAzureRmResourceGroupName: 'terraform-state-rg'
+          backendAzureRmStorageAccountName: 'tfstagebackend2026pritom'
+          backendAzureRmContainerName: 'tfstate'
+          backendAzureRmKey: 'stage.terraform.tfstate'
+      - task: TerraformTask@5
+        inputs:
+          provider: 'azurerm'
+          command: 'apply'
+          workingDirectory: '$(System.DefaultWorkingDirectory)/staging'
+          commandOptions: '--auto-approve'
+          environmentServiceNameAzureRM: 'Visual Studio Enterprise Subscription(ffc3209b-7e54-44f5-b52f-2991017c729d)'

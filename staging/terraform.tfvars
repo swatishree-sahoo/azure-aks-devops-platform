@@ -1,0 +1,6 @@
+rgname                 = "stage-pritom-rg"
+service_principal_name = "stage-pritom-spn"
+keyvault_name          = "stage-2026pritom-kv-101"
+SUB_ID                 = "ffc3209b-7e54-44f5-b52f-2991017c729d"
+node_pool_name         = "stagenp"
+cluster_name           = "stage-2026pritom-cluster"
